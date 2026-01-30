@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SCT Returns Cloud v6.0</title>
+    <link rel="icon" type="image/png" href="sct-logistics-vector-logo.png">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;600&display=swap" rel="stylesheet">
+
+    <style>
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background-color: #020617;
+            background-image: radial-gradient(at 0% 0%, rgba(6, 182, 212, 0.1) 0px, transparent 50%), radial-gradient(at 100% 100%, rgba(220, 38, 38, 0.05) 0px, transparent 50%);
+            background-attachment: fixed;
+        }
+        .mono { font-family: 'JetBrains Mono', monospace; }
+        .glass-panel { background: rgba(15, 17, 26, 0.8); backdrop-filter: blur(12px); border: 1px solid rgba(148, 163, 184, 0.1); }
+        .glass-dropdown-menu { background: rgba(2, 6, 23, 0.95); backdrop-filter: blur(16px); border: 1px solid rgba(6, 182, 212, 0.2); box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.8); }
+        .tab-btn.active { background: rgba(6, 182, 212, 0.15); border-color: rgba(6, 182, 212, 0.5); color: #22d3ee; }
+        .hidden-view { display: none; }
+        .tag-btn { opacity: 0.4; border: 1px solid transparent; } .tag-btn:hover { opacity: 0.7; } .tag-btn.active { opacity: 1; border-color: currentColor; box-shadow: 0 0 8px currentColor; }
+        @keyframes slideIn { from { opacity: 0; transform: translateY(-20px); } to { opacity: 1; transform: translateY(0); } }
+        .animate-enter { animation: slideIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+        tr { transition: background-color 0.2s; }
+        @keyframes row-pulse { 0%, 100% { background-color: rgba(251, 191, 36, 0.05); box-shadow: inset 4px 0 0 0 rgba(251, 191, 36, 0.3); } 50% { background-color: rgba(251, 191, 36, 0.1); box-shadow: inset 4px 0 0 0 rgba(251, 191, 36, 0.8); } }
+        .row-progress-active { animation: row-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+        /* Sync Indicator */
+        #syncStatus { font-size: 10px; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; }
+        .syncing { color: #facc15; animation: pulse 1s infinite; }
+        .synced { color: #22c55e; }
+        .error { color: #ef4444; }
+    </style>
+    
+    <script>
+        tailwind.config = { theme: { extend: { colors: { slate: { 850: '#1e293b', 900: '#0f172a', 950: '#020617' }, cyan: { 450: '#06b6d4' } } } } }
+    </script>
+</head>
+<body class="text-slate-300 min-h-screen flex flex-col p-6" onclick="handleGlobalClick(event)">
+
+    <div class="flex justify-between items-center mb-6 border-b border-white/10 pb-4">
+        <div class="flex items-center">
+            <img src="sct-logistics-vector-logo.png" onerror="this.style.display='none'" class="w-32 h-auto mr-5 object-contain drop-shadow-[0_0_15px_rgba(220,38,38,0.3)]">
+            <div>
+                <h1 class="text-2xl font-bold text-white tracking-tight flex items-center gap-3">
+                    <i data-lucide="cloud-lightning" class="text-cyan-400 drop-shadow-[0_0_8px_rgba(6,182,212,0.5)]"></i>
+                    <div>SCT CLOUD <span class="text-slate-500 text-sm font-mono font-normal tracking-wider">v6.0</span></div>
+                </h1>
+                <div id="syncStatus" class="mt-1 flex items-center gap-2 text-slate-500">
+                    <i data-lucide="refresh-cw" width="10"></i> OFFLINE MODE
+                </div>
+            </div>
+        </div>
+        <div class="flex items-center gap-4">
+            <button onclick="forceSync()" class="px-3 py-2 bg-cyan-900/30 text-cyan-400 text-xs border border-cyan-500/30 rounded hover:bg-cyan-500/20">FORCE SYNC</button>
+            <div id="weatherWidget" class="flex items-center gap-3 text-right border-l border-white/10 pl-6">
+                <div class="flex flex-col"><span id="weatherTemp" class="text-2xl font-mono text-cyan-400 font-bold leading-none">--</span><span class="text-[10px] text-slate-500 uppercase tracking-widest mt-1">Forrestfield</span></div>
+                <i id="weatherIcon" data-lucide="cloud" class="text-slate-400 w-8 h-8"></i>
+            </div>
+            <div class="text-right pl-4">
+                <div id="clock" class="mono text-white font-bold text-2xl leading-none tracking-tight">00:00</div>
+                <div id="date" class="text-[10px] text-slate-500 uppercase tracking-widest mt-1">-- --- ----</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="flex justify-between items-center mb-6">
+        <div class="flex gap-4">
+            <button onclick="switchTab('tasks')" id="tab-tasks" class="tab-btn active flex items-center gap-2 px-6 py-3 rounded-lg border border-white/5 text-sm font-bold uppercase tracking-widest transition-all hover:bg-white/5"><i data-lucide="list"></i> Live Ops</button>
+            <button onclick="switchTab('insights')" id="tab-insights" class="tab-btn flex items-center gap-2 px-6 py-3 rounded-lg border border-white/5 text-sm font-bold uppercase tracking-widest transition-all hover:bg-white/5"><i data-lucide="bar-chart-2"></i> Analytics</button>
+        </div>
+        <div class="relative group">
+            <i data-lucide="search" class="absolute left-3 top-3 text-slate-500 group-focus-within:text-cyan-400" width="16"></i>
+            <input type="text" id="searchInput" onkeyup="render()" placeholder="Global Search [Alt+F]" class="bg-white/5 border border-white/10 rounded-lg pl-10 pr-4 py-2.5 w-64 text-sm text-white focus:w-80 transition-all outline-none focus:border-cyan-500/50 font-mono">
+        </div>
+    </div>
+
+    <div id="view-tasks">
+        <div class="glass-panel p-2 rounded-xl shadow-2xl mb-8 flex items-center gap-2 relative group focus-within:ring-1 focus-within:ring-cyan-500/50 transition-all">
+            <div class="pl-4 text-cyan-500/50 font-bold mono">></div>
+            <input type="text" id="soInput" placeholder="SO Number (Start with 10...)" class="bg-transparent border-none outline-none text-white font-mono text-lg p-3 w-48 placeholder-slate-600 focus:placeholder-slate-500">
+            <div class="w-[1px] h-8 bg-white/10"></div>
+            <input type="text" id="taskInput" placeholder="Task / Issue Description..." class="bg-transparent border-none outline-none text-white p-3 flex-1 placeholder-slate-600">
+            <button onclick="addTask()" class="bg-cyan-600 hover:bg-cyan-500 text-white font-bold px-6 py-2 rounded-lg m-1 uppercase text-sm tracking-wide transition-all shadow-[0_0_15px_rgba(8,145,178,0.4)]">Add Entry [Enter]</button>
+        </div>
+
+        <div class="flex-1 overflow-visible rounded-xl glass-panel pb-20">
+            <table class="w-full text-left border-collapse">
+                <thead class="sticky top-0 bg-[#0f172a]/95 backdrop-blur z-10 border-b border-white/10 text-xs uppercase text-slate-500 tracking-wider">
+                    <tr><th class="p-4">Aging</th><th class="p-4">SO Number</th><th class="p-4">Task Details</th><th class="p-4">Status & Tags</th><th class="p-4 w-1/3">Comments</th><th class="p-4 text-right">Actions</th></tr>
+                </thead>
+                <tbody id="taskTableBody" class="text-sm"></tbody>
+            </table>
+            <div id="emptyState" class="hidden flex-col items-center justify-center h-64 text-slate-600"><p class="text-sm font-mono">SYNCING DATA...</p></div>
+        </div>
+    </div>
+
+    <script>
+        // =======================================================
+        // === CONFIGURATION (PASTE YOUR URL BELOW) ===
+        // =======================================================
+        const API_URL = https://script.google.com/macros/s/AKfycbyDHocaIfl20PvyMZEzKYCQwrDtR2VTFxLG9o-p3YxfGOtNkurXOozRvr-izZc4fitRXg/exec; 
+        // =======================================================
+
+        const CONTACTS = { default: "manager@sctlogistics.com.au" };
+        let tasks = [];
+        let openDropdownId = null;
+        let isSyncing = false;
+
+        // --- CLOUD SYNC ENGINE ---
+        async function fetchFromCloud() {
+            if(!API_URL.includes("http")) { updateSyncUI("API URL MISSING", "error"); return; }
+            updateSyncUI("DOWNLOADING...", "syncing");
+            try {
+                const res = await fetch(API_URL);
+                const data = await res.json();
+                if(data && Array.isArray(data)) {
+                    tasks = data.sort((a, b) => b.created - a.created); // Sort by new
+                    updateSyncUI("CLOUD CONNECTED", "synced");
+                    render();
+                }
+            } catch(e) { updateSyncUI("SYNC FAILED", "error"); console.error(e); }
+        }
+
+        async function pushToCloud() {
+            if(!API_URL.includes("http")) return;
+            updateSyncUI("UPLOADING...", "syncing");
+            try {
+                await fetch(API_URL, {
+                    method: "POST",
+                    mode: "no-cors", // Crucial for Google Apps Script
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(tasks)
+                });
+                // Note: no-cors mode yields an opaque response, we assume success
+                setTimeout(() => updateSyncUI("CLOUD SAVED", "synced"), 1000);
+            } catch(e) { updateSyncUI("UPLOAD FAILED", "error"); }
+        }
+
+        function updateSyncUI(msg, status) {
+            const el = document.getElementById('syncStatus');
+            el.innerHTML = `<i data-lucide="${status === 'syncing' ? 'refresh-cw' : status === 'synced' ? 'check-circle' : 'alert-circle'}" width="12" class="${status === 'syncing' ? 'animate-spin' : ''}"></i> ${msg}`;
+            el.className = `mt-1 flex items-center gap-2 ${status}`;
+            lucide.createIcons();
+        }
+
+        function forceSync() { fetchFromCloud(); }
+
+        // --- CORE LOGIC ---
+        function saveTasks() { 
+            render(); 
+            // Debounce the cloud save (wait 2s after typing stops to save bandwidth)
+            clearTimeout(window.saveTimer);
+            window.saveTimer = setTimeout(pushToCloud, 2000);
+        }
+
+        function addTask() {
+            const soInput = document.getElementById('soInput');
+            const taskInput = document.getElementById('taskInput');
+            if (!soInput.value.trim()) return alert("Enter SO Number");
+
+            tasks.unshift({
+                id: Date.now(),
+                so: soInput.value.trim(),
+                desc: taskInput.value.trim() || "General Return",
+                status: 'OPEN',
+                comment: '',
+                created: Date.now(),
+                updated: Date.now(),
+                closedAt: null,
+                tags: []
+            });
+            saveTasks();
+            soInput.value = ''; taskInput.value = ''; soInput.focus();
+        }
+
+        // --- RENDER ---
+        function render() {
+            const tbody = document.getElementById('taskTableBody');
+            const search = document.getElementById('searchInput').value.toLowerCase();
+            tbody.innerHTML = '';
+            
+            const filtered = tasks.filter(t => (t.so + t.desc + t.status + t.comment).toLowerCase().includes(search));
+            const active = filtered.filter(t => t.status !== 'CLOSED');
+            const closed = filtered.filter(t => t.status === 'CLOSED');
+
+            [...active, ...closed].forEach(task => {
+                const hoursOld = (Date.now() - new Date(task.created).getTime()) / 36e5;
+                let rowClass = 'border-b border-white/5 hover:bg-white/5 group animate-enter';
+                let statusColor = 'text-slate-400 border-white/10 bg-white/5';
+                let statusLabel = task.status;
+
+                if (task.status === 'OPEN') statusColor = 'text-cyan-400 border-cyan-500/50 bg-cyan-500/10';
+                if (task.status === 'IN PROGRESS') {
+                    statusColor = 'text-amber-400 border-amber-500/50 bg-amber-500/10';
+                    statusLabel = `IN PROGRESS <i data-lucide="loader-2" class="animate-spin w-3 h-3 ml-1"></i>`;
+                    rowClass += ' row-progress-active';
+                }
+                if (task.status === 'CLOSED') rowClass += ' opacity-50 grayscale';
+
+                let tagsHtml = '';
+                if(task.status === 'IN PROGRESS') {
+                    const makeTag = (l, c) => `<button onclick="toggleTag(${task.id}, '${l}')" class="tag-btn ${task.tags && task.tags.includes(l) ? 'active' : ''} px-2 py-0.5 rounded text-[9px] font-bold ${c}">${l}</button>`;
+                    tagsHtml = `<div class="flex gap-1 mt-2">${makeTag('SALES','text-pink-400')}${makeTag('CUST','text-purple-400')}${makeTag('WHSE','text-yellow-400')}</div>`;
+                }
+
+                tbody.innerHTML += `
+                <tr class="${rowClass}">
+                    <td class="p-4"><span class="text-[10px] text-slate-500 font-mono">${Math.floor(hoursOld)}h ago</span></td>
+                    <td class="p-4 font-mono text-cyan-400 font-bold text-lg">${task.so}</td>
+                    <td class="p-4 text-slate-200 font-medium">${task.desc}</td>
+                    <td class="p-4">
+                        <div class="relative">
+                            <button onclick="toggleDropdown(${task.id}, event)" class="flex items-center justify-between w-36 text-xs font-bold rounded-lg py-1.5 px-3 border uppercase ${statusColor}"><div>${statusLabel}</div><i data-lucide="chevron-down" width="14"></i></button>
+                            <div id="dropdown-${task.id}" class="hidden absolute z-50 mt-2 w-36 rounded-lg glass-dropdown-menu shadow-xl flex flex-col">
+                                <button onclick="setStatus(${task.id}, 'OPEN', event)" class="text-left px-4 py-2 text-xs font-bold text-cyan-400 hover:bg-white/10">OPEN</button>
+                                <button onclick="setStatus(${task.id}, 'IN PROGRESS', event)" class="text-left px-4 py-2 text-xs font-bold text-amber-400 hover:bg-white/10">IN PROGRESS</button>
+                                <button onclick="setStatus(${task.id}, 'CLOSED', event)" class="text-left px-4 py-2 text-xs font-bold text-slate-400 hover:bg-white/10 border-t border-white/10">CLOSED</button>
+                            </div>
+                        </div>
+                        ${tagsHtml}
+                    </td>
+                    <td class="p-4"><input type="text" value="${task.comment}" onblur="updateField(${task.id}, 'comment', this.value)" class="w-full bg-transparent border-b border-transparent hover:border-white/20 focus:border-cyan-500 outline-none text-slate-400 text-xs py-1" placeholder="Add notes..."></td>
+                    <td class="p-4 text-right"><button onclick="deleteTask(${task.id})" class="p-2 hover:bg-rose-500/20 hover:text-rose-500 rounded-lg"><i data-lucide="trash-2" width="16"></i></button></td>
+                </tr>`;
+            });
+            
+            if (filtered.length === 0) document.getElementById('emptyState').classList.remove('hidden');
+            else document.getElementById('emptyState').classList.add('hidden');
+            lucide.createIcons();
+        }
+
+        // --- ACTIONS ---
+        function toggleDropdown(id, event) { event.stopPropagation(); if(openDropdownId && openDropdownId !== id) closeDropdown(openDropdownId); const m = document.getElementById(`dropdown-${id}`); if(m.classList.contains('hidden')) { m.classList.remove('hidden'); openDropdownId = id; m.closest('tr').style.zIndex = 50; m.closest('tr').style.position = 'relative'; } else closeDropdown(id); }
+        function closeDropdown(id) { const m = document.getElementById(`dropdown-${id}`); if(m) { m.classList.add('hidden'); m.closest('tr').style.zIndex = ''; m.closest('tr').style.position = ''; } openDropdownId = null; }
+        function handleGlobalClick(e) { if(openDropdownId) { const m = document.getElementById(`dropdown-${openDropdownId}`); if(m && !m.parentElement.contains(e.target)) closeDropdown(openDropdownId); } }
+        
+        function setStatus(id, status, e) {
+            e.stopPropagation();
+            const t = tasks.find(x => x.id === id);
+            if(t) { 
+                t.status = status; 
+                t.updated = Date.now();
+                if(status === 'CLOSED' && !t.closedAt) t.closedAt = Date.now();
+                saveTasks();
+            }
+            closeDropdown(id);
+        }
+
+        function toggleTag(id, tag) {
+            const t = tasks.find(x => x.id === id);
+            if(t) {
+                if(!t.tags) t.tags = [];
+                if(t.tags.includes(tag)) t.tags = t.tags.filter(x => x !== tag); else t.tags.push(tag);
+                saveTasks();
+            }
+        }
+
+        function updateField(id, field, val) { const t = tasks.find(x => x.id === id); if(t) { t[field] = val; saveTasks(); } }
+        function deleteTask(id) { if(confirm('Delete?')) { tasks = tasks.filter(x => x.id !== id); pushToCloud(); render(); } }
+
+        // --- UTILS ---
+        function updateClock() { const now = new Date(); document.getElementById('clock').innerText = now.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}); document.getElementById('date').innerText = now.toLocaleDateString([],{weekday:'short',day:'numeric',month:'short'}); }
+        async function fetchWeather() { try { const res = await fetch('https://api.open-meteo.com/v1/forecast?latitude=-31.98&longitude=116.01&current_weather=true'); const d = await res.json(); document.getElementById('weatherTemp').innerText = Math.round(d.current_weather.temperature) + "\u00B0C"; } catch(e){} }
+
+        // INIT
+        document.getElementById('soInput').addEventListener('keypress', e => { if(e.key==='Enter') document.getElementById('taskInput').focus(); });
+        document.getElementById('taskInput').addEventListener('keypress', e => { if(e.key==='Enter') addTask(); });
+        
+        setInterval(updateClock, 1000); updateClock(); fetchWeather();
+        // Initial Fetch
+        fetchFromCloud();
+    </script>
+</body>
+</html>
