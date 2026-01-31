@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>SCT Returns v8.0</title>
+    <title>SCT Returns v8.1</title>
     <link rel="icon" type="image/png" href="sct-logistics-vector-logo.png">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
@@ -43,17 +43,18 @@
         @keyframes row-pulse { 0%, 100% { background-color: rgba(251, 191, 36, 0.05); box-shadow: inset 3px 0 0 0 rgba(251, 191, 36, 0.3); } 50% { background-color: rgba(251, 191, 36, 0.1); box-shadow: inset 3px 0 0 0 rgba(251, 191, 36, 0.8); } }
         .row-progress-active { animation: row-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
 
-        /* Sync Status */
+        /* Sync Status - FIXED: Removed the spin animation from the text container */
         #syncStatus { font-size: 10px; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; }
-        .syncing { color: #facc15; animation: spin 2s linear infinite; } 
-        .synced { color: #22c55e; } .error { color: #ef4444; }
+        .syncing { color: #facc15; } /* Just color, no spin */
+        .synced { color: #22c55e; } 
+        .error { color: #ef4444; }
 
         /* Mobile Optimization */
         @media (max-width: 768px) {
             .mobile-stack { flex-direction: column; align-items: flex-start; gap: 1rem; }
             .mobile-full { width: 100%; }
             .mobile-hide { display: none; }
-            .glass-panel { backdrop-filter: none; background: #0f172a; } /* Performance boost on mobile */
+            .glass-panel { backdrop-filter: none; background: #0f172a; } 
         }
     </style>
     
@@ -199,9 +200,12 @@
                 const res = await fetch(API_URL);
                 const data = await res.json();
                 if(data && Array.isArray(data)) {
-                    tasks = data.sort((a, b) => b.created - a.created);
+                    // Only update if data is different (simple check) to prevent jitter
+                    if(JSON.stringify(data) !== JSON.stringify(tasks)) {
+                        tasks = data.sort((a, b) => b.created - a.created);
+                        render();
+                    }
                     updateSyncUI("ONLINE", "synced");
-                    render();
                 }
             } catch(e) { updateSyncUI("OFFLINE", "error"); }
         }
@@ -218,6 +222,7 @@
         function updateSyncUI(msg, status) {
             const el = document.getElementById('syncStatus');
             const icon = status==='syncing'?'refresh-cw':status==='synced'?'check-circle':'alert-circle';
+            // FIX: Apply spin class ONLY to the icon element
             const spin = status==='syncing'?'animate-spin':'';
             el.innerHTML = `<i data-lucide="${icon}" width="10" class="${spin}"></i> ${msg}`;
             el.className = `mt-1 flex items-center gap-2 ${status}`;
@@ -311,7 +316,7 @@
         function deleteTask(id) { if(confirm('Delete?')) { tasks = tasks.filter(x => x.id !== id); pushToCloud(); render(); } }
         
         // Memos
-        function renderMemos() { const c = document.getElementById('memoContainer'); c.innerHTML = ''; memos.forEach(m => c.innerHTML += `<div class="memo-card p-3 rounded bg-white/5 border ${m.color}"><textarea oninput="updateMemoText(${m.id},this.value)" class="w-full bg-transparent outline-none text-sm text-slate-300 resize-none h-24" placeholder="Note...">${m.text}</textarea><div class="flex justify-between mt-2 pt-2 border-t border-white/5"><div class="flex gap-2"><button onclick="updateMemoColor(${m.id},'border-cyan-500/50')" class="w-3 h-3 rounded-full bg-cyan-500"></button><button onclick="updateMemoColor(${m.id},'border-rose-500/50')" class="w-3 h-3 rounded-full bg-rose-500"></button></div><button onclick="deleteMemo(${m.id})"><i data-lucide="trash-2" width="14"></i></button></div></div>`); lucide.createIcons(); }
+        function renderMemos() { const c = document.getElementById('memoContainer'); c.innerHTML = ''; memos.forEach(m => c.innerHTML += `<div class="memo-card p-3 rounded bg-white/5 border ${m.color}"><textarea oninput="updateMemoText(${m.id},this.value)" class="w-full bg-transparent outline-none text-sm text-slate-300 resize-none h-24" placeholder="Note...">${m.text}</textarea><div class="flex justify-between mt-2 pt-2 border-t border-white/5"><div class="flex gap-2"><button onclick="updateMemoColor(${m.id},'border-cyan-500/50')" class="w-3 h-3 rounded-full bg-cyan-500"></button><button onclick="updateMemoColor(${m.id},'border-amber-500/50')" class="w-3 h-3 rounded-full bg-amber-500"></button><button onclick="updateMemoColor(${m.id},'border-rose-500/50')" class="w-3 h-3 rounded-full bg-rose-500"></button></div><button onclick="deleteMemo(${m.id})"><i data-lucide="trash-2" width="14"></i></button></div></div>`); lucide.createIcons(); }
         function saveMemos() { localStorage.setItem('sct_memos', JSON.stringify(memos)); renderMemos(); }
         function addMemo() { memos.unshift({id:Date.now(), text:'', color:'border-white/10'}); saveMemos(); }
         function deleteMemo(id) { memos = memos.filter(m => m.id !== id); saveMemos(); }
@@ -322,9 +327,15 @@
         function openTeamsChannel() { window.open(TEAMS_CHANNEL_URL, '_blank'); }
         function updateClock() { const n = new Date(); document.getElementById('clock').innerText = n.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}); document.getElementById('date').innerText = n.toLocaleDateString([],{weekday:'short',day:'numeric',month:'short'}); }
         
+        function exportJSON() { const d = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify({tasks, memos})); const a = document.createElement('a'); a.href = d; a.download = "sct_backup.json"; a.click(); }
+        function importJSON(i) { const f = i.files[0]; if(!f) return; const r = new FileReader(); r.onload = function(e) { try { const d = JSON.parse(e.target.result); if(confirm(`Restore?`)) { if(Array.isArray(d)) tasks = d; else { tasks = d.tasks||[]; memos = d.memos||[]; } saveTasks(); saveMemos(); alert("Restored."); } } catch(err) { alert("Invalid File"); } }; r.readAsText(f); i.value = ''; }
+
         // INIT
         document.getElementById('soInput').addEventListener('keypress', e => { if(e.key==='Enter') document.getElementById('taskInput').focus(); });
         document.getElementById('taskInput').addEventListener('keypress', e => { if(e.key==='Enter') addTask(); });
+        
+        // Auto-refresh interval (Heartbeat) - Runs every 15 seconds
+        setInterval(() => { if(!document.hidden) fetchFromCloud(); }, 15000);
         setInterval(updateClock, 1000); updateClock(); fetchFromCloud();
     </script>
 </body>
