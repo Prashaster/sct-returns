@@ -2,8 +2,8 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SCT Returns Cloud v7.0</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>SCT Returns v8.0</title>
     <link rel="icon" type="image/png" href="sct-logistics-vector-logo.png">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
@@ -18,15 +18,16 @@
                 radial-gradient(at 100% 100%, rgba(220, 38, 38, 0.05) 0px, transparent 50%);
             background-attachment: fixed;
             overflow-x: hidden;
+            -webkit-tap-highlight-color: transparent;
         }
         .mono { font-family: 'JetBrains Mono', monospace; }
         
         /* Glass & UI */
-        .glass-panel { background: rgba(15, 17, 26, 0.8); backdrop-filter: blur(12px); border: 1px solid rgba(148, 163, 184, 0.1); }
+        .glass-panel { background: rgba(15, 17, 26, 0.85); backdrop-filter: blur(12px); border: 1px solid rgba(148, 163, 184, 0.1); }
         .glass-dropdown-menu { background: rgba(2, 6, 23, 0.95); backdrop-filter: blur(16px); border: 1px solid rgba(6, 182, 212, 0.2); box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.8); }
         
         /* Sidebar & Memos */
-        #memoPanel { box-shadow: -10px 0 30px rgba(0,0,0,0.5); background: rgba(10, 12, 20, 0.95); }
+        #memoPanel { box-shadow: -10px 0 30px rgba(0,0,0,0.5); background: rgba(10, 12, 20, 0.98); }
         .memo-card { transition: all 0.2s; }
         .memo-card:focus-within { border-color: rgba(6, 182, 212, 0.5); background: rgba(255,255,255,0.03); }
 
@@ -35,128 +36,157 @@
         .hidden-view { display: none; }
         .tag-btn { opacity: 0.4; border: 1px solid transparent; } .tag-btn:hover { opacity: 0.7; } .tag-btn.active { opacity: 1; border-color: currentColor; box-shadow: 0 0 8px currentColor; }
         
-        @keyframes slideIn { from { opacity: 0; transform: translateY(-20px); } to { opacity: 1; transform: translateY(0); } }
-        .animate-enter { animation: slideIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
-        tr { transition: background-color 0.2s, box-shadow 0.2s; }
+        @keyframes slideIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+        .animate-enter { animation: slideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+        tr { transition: background-color 0.2s; }
         
-        @keyframes border-pulse { 0%, 100% { border-color: rgba(251, 191, 36, 0.3); } 50% { border-color: rgba(251, 191, 36, 0.8); } }
-        .status-progress-active { animation: border-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
-        
-        @keyframes row-pulse { 0%, 100% { background-color: rgba(251, 191, 36, 0.05); box-shadow: inset 4px 0 0 0 rgba(251, 191, 36, 0.3); } 50% { background-color: rgba(251, 191, 36, 0.1); box-shadow: inset 4px 0 0 0 rgba(251, 191, 36, 0.8); } }
+        @keyframes row-pulse { 0%, 100% { background-color: rgba(251, 191, 36, 0.05); box-shadow: inset 3px 0 0 0 rgba(251, 191, 36, 0.3); } 50% { background-color: rgba(251, 191, 36, 0.1); box-shadow: inset 3px 0 0 0 rgba(251, 191, 36, 0.8); } }
         .row-progress-active { animation: row-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
 
         /* Sync Status */
         #syncStatus { font-size: 10px; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; }
-        .syncing { color: #facc15; } .synced { color: #22c55e; } .error { color: #ef4444; }
+        .syncing { color: #facc15; animation: spin 2s linear infinite; } 
+        .synced { color: #22c55e; } .error { color: #ef4444; }
+
+        /* Mobile Optimization */
+        @media (max-width: 768px) {
+            .mobile-stack { flex-direction: column; align-items: flex-start; gap: 1rem; }
+            .mobile-full { width: 100%; }
+            .mobile-hide { display: none; }
+            .glass-panel { backdrop-filter: none; background: #0f172a; } /* Performance boost on mobile */
+        }
     </style>
     
     <script>
         tailwind.config = { theme: { extend: { colors: { slate: { 850: '#1e293b', 900: '#0f172a', 950: '#020617' }, cyan: { 450: '#06b6d4' } } } } }
     </script>
 </head>
-<body class="text-slate-300 min-h-screen flex flex-col p-6" onclick="handleGlobalClick(event)">
+<body class="text-slate-300 min-h-screen flex flex-col p-4 md:p-6" onclick="handleGlobalClick(event)">
 
-    <div id="memoPanel" class="fixed top-0 right-0 h-full w-80 glass-panel border-l border-white/10 transform translate-x-full transition-transform duration-300 z-50 flex flex-col">
-        <div class="p-6 border-b border-white/10 flex justify-between items-center bg-[#020617]/50 backdrop-blur">
+    <div id="memoPanel" class="fixed top-0 right-0 h-full w-full md:w-96 glass-panel border-l border-white/10 transform translate-x-full transition-transform duration-300 z-50 flex flex-col">
+        <div class="p-6 border-b border-white/10 flex justify-between items-center bg-[#020617]">
             <h2 class="text-white font-bold tracking-widest flex items-center gap-2"><i data-lucide="sticky-note" class="text-cyan-400" width="18"></i> MEMOS</h2>
-            <button onclick="toggleMemoPanel()" class="hover:text-white transition-colors"><i data-lucide="x" width="20"></i></button>
+            <button onclick="toggleMemoPanel()" class="p-2 hover:bg-white/10 rounded-full"><i data-lucide="x" width="24"></i></button>
         </div>
         <div class="p-4 flex-1 overflow-y-auto space-y-4" id="memoContainer"></div>
-        <div class="p-4 border-t border-white/10 bg-[#020617]/50 backdrop-blur">
-            <button onclick="addMemo()" class="w-full py-3 bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-400 font-bold rounded border border-cyan-500/30 uppercase tracking-wider transition-all flex items-center justify-center gap-2"><i data-lucide="plus" width="16"></i> New Memo</button>
+        <div class="p-4 border-t border-white/10 bg-[#020617]">
+            <button onclick="addMemo()" class="w-full py-4 bg-cyan-500/10 active:bg-cyan-500/20 text-cyan-400 font-bold rounded border border-cyan-500/30 uppercase tracking-wider flex items-center justify-center gap-2"><i data-lucide="plus" width="16"></i> New Memo</button>
         </div>
     </div>
 
-    <div class="flex justify-between items-center mb-6 border-b border-white/10 pb-4">
-        <div class="flex items-center">
-            <img src="sct-logistics-vector-logo.png" onerror="this.style.display='none'" class="w-32 h-auto mr-5 object-contain drop-shadow-[0_0_15px_rgba(220,38,38,0.3)]">
-            <div>
-                <h1 class="text-2xl font-bold text-white tracking-tight flex items-center gap-3">
-                    <i data-lucide="cloud-lightning" class="text-cyan-400 drop-shadow-[0_0_8px_rgba(6,182,212,0.5)]"></i>
-                    <div>SCT CLOUD <span class="text-slate-500 text-sm font-mono font-normal tracking-wider">v7.0</span></div>
-                </h1>
-                <div id="syncStatus" class="mt-1 flex items-center gap-2 text-slate-500"><i data-lucide="refresh-cw" width="10"></i> OFFLINE</div>
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 border-b border-white/10 pb-4 gap-4">
+        <div class="flex items-center w-full md:w-auto justify-between">
+            <div class="flex items-center">
+                <img src="sct-logistics-vector-logo.png" onerror="this.style.display='none'" class="w-24 md:w-32 h-auto mr-4 object-contain">
+                <div>
+                    <h1 class="text-xl md:text-2xl font-bold text-white tracking-tight flex items-center gap-2">
+                        <i data-lucide="package-search" class="text-cyan-400"></i>
+                        <div>SCT RETURNS</div>
+                    </h1>
+                    <div id="syncStatus" class="mt-1 flex items-center gap-2 text-slate-500"><i data-lucide="refresh-cw" width="10"></i> OFFLINE</div>
+                </div>
             </div>
+            <button onclick="toggleMobileMenu()" class="md:hidden p-2 text-slate-400"><i data-lucide="menu"></i></button>
         </div>
         
-        <div class="flex items-center gap-4">
+        <div id="headerActions" class="hidden md:flex flex-wrap items-center gap-3 w-full md:w-auto">
             <button onclick="openTeamsChannel()" class="group flex items-center gap-2 px-3 py-2 bg-[#465EB8]/20 hover:bg-[#465EB8]/40 text-[#6E85DD] text-[10px] font-bold uppercase tracking-wider rounded border border-[#465EB8]/30 transition-all">
-                <i data-lucide="users" width="14"></i> Teams
+                <i data-lucide="users" width="14"></i> <span class="hidden md:inline">Teams</span>
             </button>
 
             <div class="flex bg-white/5 rounded border border-white/10">
-                <button onclick="exportJSON()" title="Backup Database" class="px-3 py-2 hover:bg-white/10 text-cyan-400 border-r border-white/10 transition-colors"><i data-lucide="save" width="14"></i></button>
-                <button onclick="document.getElementById('fileInput').click()" title="Restore Database" class="px-3 py-2 hover:bg-white/10 text-amber-400 transition-colors"><i data-lucide="upload-cloud" width="14"></i></button>
+                <button onclick="exportJSON()" class="px-3 py-2 hover:bg-white/10 text-cyan-400 border-r border-white/10"><i data-lucide="save" width="14"></i></button>
+                <button onclick="document.getElementById('fileInput').click()" class="px-3 py-2 hover:bg-white/10 text-amber-400"><i data-lucide="upload-cloud" width="14"></i></button>
             </div>
             <input type="file" id="fileInput" class="hidden" accept=".json" onchange="importJSON(this)">
             
-            <button onclick="toggleMemoPanel()" class="px-4 py-2 bg-white/5 hover:bg-white/10 text-xs font-bold uppercase tracking-wider rounded border border-white/10 transition-all hover:text-white flex items-center gap-2">
-                <i data-lucide="sticky-note" width="14"></i> Memos
+            <button onclick="toggleMemoPanel()" class="px-4 py-2 bg-white/5 hover:bg-white/10 text-xs font-bold uppercase tracking-wider rounded border border-white/10 text-slate-300 flex items-center gap-2">
+                <i data-lucide="sticky-note" width="14"></i> <span class="hidden md:inline">Memos</span>
             </button>
 
-            <div id="weatherWidget" class="flex items-center gap-3 text-right border-l border-white/10 pl-6">
-                <div class="flex flex-col"><span id="weatherTemp" class="text-2xl font-mono text-cyan-400 font-bold leading-none">--</span><span class="text-[10px] text-slate-500 uppercase tracking-widest mt-1">Forrestfield</span></div>
-                <i id="weatherIcon" data-lucide="cloud" class="text-slate-400 w-8 h-8"></i>
-            </div>
-            <div class="text-right pl-4">
-                <div id="clock" class="mono text-white font-bold text-2xl leading-none tracking-tight">00:00</div>
-                <div id="date" class="text-[10px] text-slate-500 uppercase tracking-widest mt-1">-- --- ----</div>
+            <div class="hidden md:block w-px h-8 bg-white/10 mx-2"></div>
+
+            <div class="text-right">
+                <div id="clock" class="mono text-white font-bold text-xl leading-none">00:00</div>
+                <div id="date" class="text-[10px] text-slate-500 uppercase tracking-widest">-- ---</div>
             </div>
         </div>
     </div>
 
-    <div class="flex justify-between items-center mb-6">
-        <div class="flex gap-4">
-            <button onclick="switchTab('tasks')" id="tab-tasks" class="tab-btn active flex items-center gap-2 px-6 py-3 rounded-lg border border-white/5 text-sm font-bold uppercase tracking-widest transition-all hover:bg-white/5"><i data-lucide="list"></i> Live Ops</button>
-            <button onclick="switchTab('insights')" id="tab-insights" class="tab-btn flex items-center gap-2 px-6 py-3 rounded-lg border border-white/5 text-sm font-bold uppercase tracking-widest transition-all hover:bg-white/5"><i data-lucide="bar-chart-2"></i> Analytics</button>
+    <div class="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
+        <div class="flex gap-2 w-full md:w-auto bg-white/5 p-1 rounded-lg">
+            <button onclick="switchTab('tasks')" id="tab-tasks" class="tab-btn active flex-1 md:flex-none flex justify-center items-center gap-2 px-4 py-2 rounded text-xs font-bold uppercase tracking-widest transition-all"><i data-lucide="list" width="14"></i> Ops</button>
+            <button onclick="switchTab('insights')" id="tab-insights" class="tab-btn flex-1 md:flex-none flex justify-center items-center gap-2 px-4 py-2 rounded text-xs font-bold uppercase tracking-widest transition-all"><i data-lucide="bar-chart-2" width="14"></i> Data</button>
         </div>
-        <div class="relative group">
-            <i data-lucide="search" class="absolute left-3 top-3 text-slate-500 group-focus-within:text-cyan-400" width="16"></i>
-            <input type="text" id="searchInput" onkeyup="render()" placeholder="Global Search [Alt+F]" class="bg-white/5 border border-white/10 rounded-lg pl-10 pr-4 py-2.5 w-64 text-sm text-white focus:w-80 transition-all outline-none focus:border-cyan-500/50 font-mono">
+        <div class="relative w-full md:w-auto">
+            <i data-lucide="search" class="absolute left-3 top-2.5 text-slate-500" width="16"></i>
+            <input type="text" id="searchInput" onkeyup="render()" placeholder="Search... [Alt+F]" class="bg-white/5 border border-white/10 rounded-lg pl-10 pr-4 py-2 w-full md:w-64 text-sm text-white focus:border-cyan-500/50 outline-none">
         </div>
     </div>
 
     <div id="view-tasks">
-        <div class="glass-panel p-2 rounded-xl shadow-2xl mb-8 flex items-center gap-2 relative group focus-within:ring-1 focus-within:ring-cyan-500/50 transition-all">
-            <div class="pl-4 text-cyan-500/50 font-bold mono">></div>
-            <input type="text" id="soInput" placeholder="SO Number (Start with 10...)" class="bg-transparent border-none outline-none text-white font-mono text-lg p-3 w-48 placeholder-slate-600 focus:placeholder-slate-500">
-            <div class="w-[1px] h-8 bg-white/10"></div>
-            <input type="text" id="taskInput" placeholder="Task / Issue Description..." class="bg-transparent border-none outline-none text-white p-3 flex-1 placeholder-slate-600">
-            <button onclick="addTask()" class="bg-cyan-600 hover:bg-cyan-500 text-white font-bold px-6 py-2 rounded-lg m-1 uppercase text-sm tracking-wide transition-all shadow-[0_0_15px_rgba(8,145,178,0.4)]">Add Entry [Enter]</button>
+        <div class="glass-panel p-3 rounded-xl shadow-2xl mb-6 flex flex-col md:flex-row items-center gap-3">
+            <div class="flex items-center w-full md:w-auto gap-2 border-b md:border-b-0 md:border-r border-white/10 pb-2 md:pb-0 md:pr-4">
+                <span class="text-cyan-500/50 font-bold mono">></span>
+                <input type="text" id="soInput" placeholder="SO Number" class="bg-transparent border-none outline-none text-white font-mono text-lg w-full md:w-32 placeholder-slate-600">
+            </div>
+            <input type="text" id="taskInput" placeholder="Task Description..." class="bg-transparent border-none outline-none text-white p-2 flex-1 w-full placeholder-slate-600">
+            <button onclick="addTask()" class="w-full md:w-auto bg-cyan-600 active:bg-cyan-700 text-white font-bold px-6 py-2 rounded-lg uppercase text-xs tracking-wide shadow-lg shadow-cyan-900/20">Add</button>
         </div>
 
-        <div class="flex-1 overflow-visible rounded-xl glass-panel pb-20">
-            <table class="w-full text-left border-collapse">
-                <thead class="sticky top-0 bg-[#0f172a]/95 backdrop-blur z-10 border-b border-white/10 text-xs uppercase text-slate-500 tracking-wider">
-                    <tr><th class="p-4">Aging</th><th class="p-4">SO Number</th><th class="p-4">Task Details</th><th class="p-4">Status & Tags</th><th class="p-4 w-1/3">Comments</th><th class="p-4 text-right">Actions</th></tr>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+            <div class="glass-panel p-3 rounded-lg flex flex-col justify-between h-20 relative overflow-hidden">
+                <div class="absolute top-2 right-2 opacity-10"><i data-lucide="layers"></i></div>
+                <span class="text-[10px] text-slate-400 uppercase font-bold">Active</span>
+                <span id="statOpen" class="text-2xl font-mono text-white font-bold">0</span>
+            </div>
+            <div class="glass-panel p-3 rounded-lg flex flex-col justify-between h-20 border-l-2 border-rose-500 relative overflow-hidden">
+                <div class="absolute top-2 right-2 opacity-10 text-rose-500"><i data-lucide="alert-triangle"></i></div>
+                <span class="text-[10px] text-rose-400 uppercase font-bold">Critical</span>
+                <span id="statCritical" class="text-2xl font-mono text-rose-500 font-bold">0</span>
+            </div>
+            <div class="glass-panel p-3 rounded-lg flex flex-col justify-between h-20 border-l-2 border-amber-500 relative overflow-hidden">
+                <div class="absolute top-2 right-2 opacity-10 text-amber-500"><i data-lucide="clock"></i></div>
+                <span class="text-[10px] text-amber-400 uppercase font-bold">Aging</span>
+                <span id="statAging" class="text-2xl font-mono text-amber-500 font-bold">0</span>
+            </div>
+            <div class="glass-panel p-3 rounded-lg flex flex-col justify-between h-20 opacity-60">
+                <span class="text-[10px] text-slate-500 uppercase font-bold">Closed Today</span>
+                <span id="statClosed" class="text-2xl font-mono text-slate-400 font-bold">0</span>
+            </div>
+        </div>
+
+        <div class="flex-1 overflow-x-auto rounded-xl glass-panel pb-20">
+            <table class="w-full text-left border-collapse min-w-[600px]"> <thead class="sticky top-0 bg-[#0f172a]/95 backdrop-blur z-10 border-b border-white/10 text-xs uppercase text-slate-500 tracking-wider">
+                    <tr><th class="p-4">Aging</th><th class="p-4">SO Number</th><th class="p-4">Details</th><th class="p-4">Status</th><th class="p-4 w-48">Notes</th><th class="p-4 text-right">Action</th></tr>
                 </thead>
                 <tbody id="taskTableBody" class="text-sm"></tbody>
             </table>
-            <div id="emptyState" class="hidden flex-col items-center justify-center h-64 text-slate-600"><p class="text-sm font-mono">SYNCING DATA...</p></div>
+            <div id="emptyState" class="hidden flex-col items-center justify-center h-48 text-slate-600"><p class="text-xs font-mono">NO ACTIVE RETURNS</p></div>
         </div>
     </div>
 
     <div id="view-insights" class="hidden-view">
-        <div class="grid grid-cols-3 gap-6 mb-8">
-            <div class="glass-panel p-6 rounded-xl flex flex-col items-center justify-center h-48 border-t-4 border-t-cyan-500"><span class="text-xs text-cyan-400 font-bold uppercase mb-2">Avg. Turnaround</span><span id="insightDuration" class="text-4xl font-mono text-white font-bold">--</span></div>
-            <div class="glass-panel p-6 rounded-xl flex flex-col items-center justify-center h-48 border-t-4 border-t-purple-500"><span class="text-xs text-purple-400 font-bold uppercase mb-2">Efficiency Grade</span><span id="insightGrade" class="text-6xl font-mono text-white font-bold">--</span></div>
-            <div class="glass-panel p-6 rounded-xl flex flex-col items-center justify-center h-48 border-t-4 border-t-emerald-500"><span class="text-xs text-emerald-400 font-bold uppercase mb-2">Total Processed</span><span id="insightTotal" class="text-4xl font-mono text-white font-bold">--</span></div>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+            <div class="glass-panel p-6 rounded-xl flex flex-col items-center justify-center h-40 border-t-4 border-cyan-500 bg-[#0f172a]"><span class="text-xs text-cyan-400 font-bold uppercase mb-2">Avg Time</span><span id="insightDuration" class="text-3xl font-mono text-white font-bold">--</span></div>
+            <div class="glass-panel p-6 rounded-xl flex flex-col items-center justify-center h-40 border-t-4 border-purple-500 bg-[#0f172a]"><span class="text-xs text-purple-400 font-bold uppercase mb-2">Grade</span><span id="insightGrade" class="text-5xl font-mono text-white font-bold">--</span></div>
+            <div class="glass-panel p-6 rounded-xl flex flex-col items-center justify-center h-40 border-t-4 border-emerald-500 bg-[#0f172a]"><span class="text-xs text-emerald-400 font-bold uppercase mb-2">Total Done</span><span id="insightTotal" class="text-3xl font-mono text-white font-bold">--</span></div>
         </div>
-        <div class="flex-1 overflow-auto rounded-xl glass-panel">
-            <table class="w-full text-left border-collapse"><thead class="sticky top-0 bg-[#0f172a]/95 backdrop-blur z-10 border-b border-white/10 text-xs uppercase text-slate-500 tracking-wider"><tr><th class="p-4">Closed Date</th><th class="p-4">SO Number</th><th class="p-4">Duration</th><th class="p-4">Grade</th></tr></thead><tbody id="insightTableBody" class="text-sm"></tbody></table>
+        <div class="flex-1 overflow-x-auto rounded-xl glass-panel">
+            <table class="w-full text-left border-collapse min-w-[500px]">
+                <thead class="bg-[#0f172a]/95 border-b border-white/10 text-xs uppercase text-slate-500"><tr><th class="p-4">Date</th><th class="p-4">SO</th><th class="p-4">Time</th><th class="p-4">Grade</th></tr></thead>
+                <tbody id="insightTableBody" class="text-sm"></tbody>
+            </table>
         </div>
     </div>
 
     <script>
         // =======================================================
-        // === CONFIGURATION (PASTE YOUR URL BELOW) ===
-        // =======================================================
+        // === CONFIGURATION ===
         const API_URL = "https://script.google.com/macros/s/AKfycbyDHocaIfl20PvyMZEzKYCQwrDtR2VTFxLG9o-p3YxfGOtNkurXOozRvr-izZc4fitRXg/exec"; 
         // =======================================================
 
-        const TEAMS_CHANNEL_URL = "https://teams.microsoft.com";
         const CONTACTS = { default: "manager@sctlogistics.com.au" };
-        
         let tasks = [];
         let memos = JSON.parse(localStorage.getItem('sct_memos')) || [];
         let openDropdownId = null;
@@ -164,57 +194,47 @@
         // --- CLOUD SYNC ---
         async function fetchFromCloud() {
             if(!API_URL.includes("http")) { updateSyncUI("API MISSING", "error"); return; }
-            updateSyncUI("DOWNLOADING...", "syncing");
+            updateSyncUI("SYNCING", "syncing");
             try {
                 const res = await fetch(API_URL);
                 const data = await res.json();
                 if(data && Array.isArray(data)) {
                     tasks = data.sort((a, b) => b.created - a.created);
-                    updateSyncUI("CLOUD CONNECTED", "synced");
+                    updateSyncUI("ONLINE", "synced");
                     render();
                 }
-            } catch(e) { updateSyncUI("SYNC FAILED", "error"); }
+            } catch(e) { updateSyncUI("OFFLINE", "error"); }
         }
 
         async function pushToCloud() {
             if(!API_URL.includes("http")) return;
-            updateSyncUI("UPLOADING...", "syncing");
+            updateSyncUI("SAVING", "syncing");
             try {
                 await fetch(API_URL, { method: "POST", mode: "no-cors", headers: { "Content-Type": "application/json" }, body: JSON.stringify(tasks) });
-                setTimeout(() => updateSyncUI("CLOUD SAVED", "synced"), 1000);
-            } catch(e) { updateSyncUI("UPLOAD FAILED", "error"); }
+                setTimeout(() => updateSyncUI("ONLINE", "synced"), 1000);
+            } catch(e) { updateSyncUI("ERROR", "error"); }
         }
 
         function updateSyncUI(msg, status) {
             const el = document.getElementById('syncStatus');
-            el.innerHTML = `<i data-lucide="${status==='syncing'?'refresh-cw':status==='synced'?'check-circle':'alert-circle'}" width="12" class="${status==='syncing'?'animate-spin':''}"></i> ${msg}`;
+            const icon = status==='syncing'?'refresh-cw':status==='synced'?'check-circle':'alert-circle';
+            const spin = status==='syncing'?'animate-spin':'';
+            el.innerHTML = `<i data-lucide="${icon}" width="10" class="${spin}"></i> ${msg}`;
             el.className = `mt-1 flex items-center gap-2 ${status}`;
             lucide.createIcons();
         }
 
         function saveTasks() { render(); clearTimeout(window.saveTimer); window.saveTimer = setTimeout(pushToCloud, 2000); }
 
-        // --- MEMOS ---
+        // --- CORE FUNCTIONS ---
+        function toggleMobileMenu() { document.getElementById('headerActions').classList.toggle('hidden'); document.getElementById('headerActions').classList.toggle('flex'); }
         function toggleMemoPanel() { document.getElementById('memoPanel').classList.toggle('translate-x-full'); renderMemos(); }
-        function saveMemos() { localStorage.setItem('sct_memos', JSON.stringify(memos)); renderMemos(); }
-        function addMemo() { memos.unshift({ id: Date.now(), text: '', color: 'border-white/10' }); saveMemos(); }
-        function deleteMemo(id) { memos = memos.filter(m => m.id !== id); saveMemos(); }
-        function updateMemoText(id, text) { const m = memos.find(x => x.id === id); if(m) { m.text = text; localStorage.setItem('sct_memos', JSON.stringify(memos)); } }
-        function updateMemoColor(id, c) { const m = memos.find(x => x.id === id); if(m) { m.color = c; saveMemos(); } }
-        function renderMemos() {
-            const c = document.getElementById('memoContainer'); c.innerHTML = '';
-            memos.forEach(m => {
-                c.innerHTML += `<div class="memo-card p-3 rounded bg-white/5 border ${m.color}"><textarea oninput="updateMemoText(${m.id},this.value)" class="w-full bg-transparent outline-none text-sm text-slate-300 resize-none h-24" placeholder="Type...">${m.text}</textarea><div class="flex justify-between mt-2 pt-2 border-t border-white/5"><div class="flex gap-2"><button onclick="updateMemoColor(${m.id},'border-cyan-500/50')" class="w-3 h-3 rounded-full bg-cyan-500"></button><button onclick="updateMemoColor(${m.id},'border-amber-500/50')" class="w-3 h-3 rounded-full bg-amber-500"></button><button onclick="updateMemoColor(${m.id},'border-rose-500/50')" class="w-3 h-3 rounded-full bg-rose-500"></button></div><button onclick="deleteMemo(${m.id})"><i data-lucide="trash-2" width="14"></i></button></div></div>`;
-            });
-            lucide.createIcons();
-        }
-
-        // --- ACTIONS ---
+        
         function addTask() {
             const so = document.getElementById('soInput').value.trim();
             const desc = document.getElementById('taskInput').value.trim();
-            if (!so) return alert("Enter SO Number");
-            tasks.unshift({ id: Date.now(), so, desc: desc || "General Return", status: 'OPEN', comment: '', created: Date.now(), updated: Date.now(), closedAt: null, tags: [] });
+            if (!so) return alert("Enter SO");
+            tasks.unshift({ id: Date.now(), so, desc: desc || "Return", status: 'OPEN', comment: '', created: Date.now(), updated: Date.now(), closedAt: null, tags: [] });
             saveTasks();
             document.getElementById('soInput').value = ''; document.getElementById('taskInput').value = ''; document.getElementById('soInput').focus();
         }
@@ -225,6 +245,12 @@
             const filtered = tasks.filter(t => (t.so + t.desc + t.status + t.comment).toLowerCase().includes(search));
             const active = filtered.filter(t => t.status !== 'CLOSED');
             const closed = filtered.filter(t => t.status === 'CLOSED');
+            
+            // Update stats
+            document.getElementById('statOpen').innerText = active.length;
+            document.getElementById('statCritical').innerText = active.filter(t => (Date.now()-t.created)/36e5 > 72).length;
+            document.getElementById('statAging').innerText = active.filter(t => (Date.now()-t.created)/36e5 > 24).length;
+            document.getElementById('statClosed').innerText = closed.filter(t => new Date(t.closedAt).toDateString() === new Date().toDateString()).length;
 
             [...active, ...closed].forEach(task => {
                 const hoursOld = (Date.now() - new Date(task.created).getTime()) / 36e5;
@@ -239,37 +265,67 @@
                 let tagsHtml = '';
                 if(task.status === 'IN PROGRESS') {
                     const makeTag = (l, c) => `<button onclick="toggleTag(${task.id}, '${l}')" class="tag-btn ${task.tags && task.tags.includes(l) ? 'active' : ''} px-2 py-0.5 rounded text-[9px] font-bold ${c}">${l}</button>`;
-                    tagsHtml = `<div class="flex gap-1 mt-2">${makeTag('SALES','text-pink-400')}${makeTag('CUST','text-purple-400')}${makeTag('WHSE','text-yellow-400')}</div>`;
+                    tagsHtml = `<div class="flex gap-1 mt-2 overflow-x-auto">${makeTag('SALES','text-pink-400')}${makeTag('CUST','text-purple-400')}${makeTag('WHSE','text-yellow-400')}</div>`;
                 }
 
-                tbody.innerHTML += `<tr class="${rowClass}"><td class="p-4"><span class="text-[10px] text-slate-500 font-mono">${Math.floor(hoursOld)}h ago</span></td><td class="p-4 font-mono text-cyan-400 font-bold text-lg">${task.so}</td><td class="p-4 text-slate-200 font-medium">${task.desc}</td><td class="p-4"><div class="relative"><button onclick="toggleDropdown(${task.id}, event)" class="flex items-center justify-between w-36 text-xs font-bold rounded-lg py-1.5 px-3 border uppercase ${statusColor}"><div>${statusLabel}</div><i data-lucide="chevron-down" width="14"></i></button><div id="dropdown-${task.id}" class="hidden absolute z-50 mt-2 w-36 rounded-lg glass-dropdown-menu shadow-xl flex flex-col"><button onclick="setStatus(${task.id}, 'OPEN', event)" class="text-left px-4 py-2 text-xs font-bold text-cyan-400 hover:bg-white/10">OPEN</button><button onclick="setStatus(${task.id}, 'IN PROGRESS', event)" class="text-left px-4 py-2 text-xs font-bold text-amber-400 hover:bg-white/10">IN PROGRESS</button><button onclick="setStatus(${task.id}, 'CLOSED', event)" class="text-left px-4 py-2 text-xs font-bold text-slate-400 hover:bg-white/10 border-t border-white/10">CLOSED</button></div></div>${tagsHtml}</td><td class="p-4"><input type="text" value="${task.comment}" onblur="updateField(${task.id}, 'comment', this.value)" class="w-full bg-transparent border-b border-transparent hover:border-white/20 focus:border-cyan-500 outline-none text-slate-400 text-xs py-1" placeholder="Add notes..."></td><td class="p-4 text-right"><button onclick="openTeamsChat(${task.id})" class="p-2 hover:bg-[#465EB8]/30 hover:text-[#6E85DD] rounded-lg mr-1"><i data-lucide="message-square" width="16"></i></button><button onclick="deleteTask(${task.id})" class="p-2 hover:bg-rose-500/20 hover:text-rose-500 rounded-lg"><i data-lucide="trash-2" width="16"></i></button></td></tr>`;
+                tbody.innerHTML += `<tr class="${rowClass}"><td class="p-4"><span class="text-[10px] text-slate-500 font-mono">${Math.floor(hoursOld)}h</span></td><td class="p-4 font-mono text-cyan-400 font-bold text-lg">${task.so}</td><td class="p-4 text-slate-200 font-medium">${task.desc}</td><td class="p-4"><div class="relative"><button onclick="toggleDropdown(${task.id}, event)" class="flex items-center justify-between w-36 text-xs font-bold rounded-lg py-1.5 px-3 border uppercase ${statusColor}"><div>${statusLabel}</div><i data-lucide="chevron-down" width="14"></i></button><div id="dropdown-${task.id}" class="hidden absolute z-50 mt-2 w-36 rounded-lg glass-dropdown-menu shadow-xl flex flex-col"><button onclick="setStatus(${task.id}, 'OPEN', event)" class="text-left px-4 py-2 text-xs font-bold text-cyan-400 hover:bg-white/10">OPEN</button><button onclick="setStatus(${task.id}, 'IN PROGRESS', event)" class="text-left px-4 py-2 text-xs font-bold text-amber-400 hover:bg-white/10">IN PROGRESS</button><button onclick="setStatus(${task.id}, 'CLOSED', event)" class="text-left px-4 py-2 text-xs font-bold text-slate-400 hover:bg-white/10 border-t border-white/10">CLOSED</button></div></div>${tagsHtml}</td><td class="p-4"><input type="text" value="${task.comment}" onblur="updateField(${task.id}, 'comment', this.value)" class="w-full bg-transparent border-b border-transparent hover:border-white/20 focus:border-cyan-500 outline-none text-slate-400 text-xs py-1" placeholder="..."></td><td class="p-4 text-right"><button onclick="deleteTask(${task.id})" class="p-2 hover:bg-rose-500/20 hover:text-rose-500 rounded-lg"><i data-lucide="trash-2" width="16"></i></button></td></tr>`;
             });
-            if(filtered.length === 0) document.getElementById('emptyState').classList.remove('hidden'); else document.getElementById('emptyState').classList.add('hidden');
+            
+            if (filtered.length === 0) document.getElementById('emptyState').classList.remove('hidden'); else document.getElementById('emptyState').classList.add('hidden');
             lucide.createIcons();
         }
 
-        // --- HELPERS ---
+        function renderInsights() {
+            const closed = tasks.filter(t => t.status === 'CLOSED' && t.closedAt);
+            const tbody = document.getElementById('insightTableBody'); tbody.innerHTML = '';
+            let totalHours = 0;
+            
+            closed.sort((a,b) => b.closedAt - a.closedAt).forEach(task => {
+                const hours = Math.max(0.1, (task.closedAt - task.created) / 36e5);
+                totalHours += hours;
+                const grade = hours < 24 ? 'S' : hours < 48 ? 'A' : 'C';
+                const gradeColor = hours < 24 ? 'text-cyan-400' : hours < 48 ? 'text-emerald-400' : 'text-rose-400';
+                tbody.innerHTML += `<tr class="border-b border-white/5"><td class="p-4 text-xs text-slate-400 font-mono">${new Date(task.closedAt).toLocaleDateString()}</td><td class="p-4 font-bold text-white">${task.so}</td><td class="p-4 font-mono text-slate-300">${hours.toFixed(1)}h</td><td class="p-4 ${gradeColor} font-mono text-lg font-bold">${grade}</td></tr>`;
+            });
+
+            document.getElementById('insightTotal').innerText = closed.length;
+            if (closed.length > 0) {
+                const avg = totalHours / closed.length;
+                document.getElementById('insightDuration').innerText = avg.toFixed(1) + "h";
+                const grade = avg < 24 ? 'S' : avg < 48 ? 'A' : 'C';
+                document.getElementById('insightGrade').innerText = grade;
+                document.getElementById('insightGrade').className = `text-6xl font-mono font-bold ${grade==='S'?'text-cyan-400':grade==='A'?'text-emerald-400':'text-rose-400'}`;
+            } else {
+                document.getElementById('insightDuration').innerText = "--";
+                document.getElementById('insightGrade').innerText = "--";
+            }
+        }
+
+        // --- HELPERS & EVENTS ---
         function toggleDropdown(id, e) { e.stopPropagation(); if(openDropdownId && openDropdownId !== id) closeDropdown(openDropdownId); const m = document.getElementById(`dropdown-${id}`); if(m.classList.contains('hidden')) { m.classList.remove('hidden'); openDropdownId = id; m.closest('tr').style.zIndex = 50; m.closest('tr').style.position = 'relative'; } else closeDropdown(id); }
         function closeDropdown(id) { const m = document.getElementById(`dropdown-${id}`); if(m) { m.classList.add('hidden'); m.closest('tr').style.zIndex = ''; m.closest('tr').style.position = ''; } openDropdownId = null; }
         function handleGlobalClick(e) { if(openDropdownId) { const m = document.getElementById(`dropdown-${openDropdownId}`); if(m && !m.parentElement.contains(e.target)) closeDropdown(openDropdownId); } }
         function setStatus(id, s, e) { e.stopPropagation(); const t = tasks.find(x => x.id === id); if(t) { t.status = s; t.updated = Date.now(); if(s === 'CLOSED' && !t.closedAt) t.closedAt = Date.now(); saveTasks(); } closeDropdown(id); }
-        function toggleTag(id, tag) { const t = tasks.find(x => x.id === id); if(t) { if(!t.tags) t.tags = []; if(t.tags.includes(tag)) t.tags = t.tags.filter(x => x !== tag); else t.tags.push(tag); saveTasks(); } }
+        function toggleTag(id, l) { const t = tasks.find(x => x.id === id); if(t) { if(!t.tags) t.tags = []; if(t.tags.includes(l)) t.tags = t.tags.filter(x => x !== l); else t.tags.push(l); saveTasks(); } }
         function updateField(id, f, v) { const t = tasks.find(x => x.id === id); if(t) { t[f] = v; saveTasks(); } }
         function deleteTask(id) { if(confirm('Delete?')) { tasks = tasks.filter(x => x.id !== id); pushToCloud(); render(); } }
-        function openTeamsChat(id) { const t = tasks.find(i => i.id === id); const s = `Return SO: ${t.so}`; const b = `Looking into: ${t.desc}. Status: ${t.status}.`; window.open(`https://teams.microsoft.com/l/chat/0/0?users=${encodeURIComponent(CONTACTS.default)}&topicName=${encodeURIComponent(s)}&message=${encodeURIComponent(b)}`, '_blank'); }
-        function openTeamsChannel() { window.open(TEAMS_CHANNEL_URL, '_blank'); }
-        function exportJSON() { const d = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify({tasks, memos})); const a = document.createElement('a'); a.href = d; a.download = "sct_backup.json"; a.click(); }
-        function importJSON(i) { const f = i.files[0]; if(!f) return; const r = new FileReader(); r.onload = function(e) { try { const d = JSON.parse(e.target.result); if(confirm(`Restore?`)) { if(Array.isArray(d)) tasks = d; else { tasks = d.tasks||[]; memos = d.memos||[]; } saveTasks(); saveMemos(); alert("Restored."); } } catch(err) { alert("Invalid File"); } }; r.readAsText(f); i.value = ''; }
+        
+        // Memos
+        function renderMemos() { const c = document.getElementById('memoContainer'); c.innerHTML = ''; memos.forEach(m => c.innerHTML += `<div class="memo-card p-3 rounded bg-white/5 border ${m.color}"><textarea oninput="updateMemoText(${m.id},this.value)" class="w-full bg-transparent outline-none text-sm text-slate-300 resize-none h-24" placeholder="Note...">${m.text}</textarea><div class="flex justify-between mt-2 pt-2 border-t border-white/5"><div class="flex gap-2"><button onclick="updateMemoColor(${m.id},'border-cyan-500/50')" class="w-3 h-3 rounded-full bg-cyan-500"></button><button onclick="updateMemoColor(${m.id},'border-rose-500/50')" class="w-3 h-3 rounded-full bg-rose-500"></button></div><button onclick="deleteMemo(${m.id})"><i data-lucide="trash-2" width="14"></i></button></div></div>`); lucide.createIcons(); }
+        function saveMemos() { localStorage.setItem('sct_memos', JSON.stringify(memos)); renderMemos(); }
+        function addMemo() { memos.unshift({id:Date.now(), text:'', color:'border-white/10'}); saveMemos(); }
+        function deleteMemo(id) { memos = memos.filter(m => m.id !== id); saveMemos(); }
+        function updateMemoText(id, t) { const m = memos.find(x => x.id === id); if(m) { m.text = t; localStorage.setItem('sct_memos', JSON.stringify(memos)); } }
+        function updateMemoColor(id, c) { const m = memos.find(x => x.id === id); if(m) { m.color = c; saveMemos(); } }
+
         function switchTab(t) { document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active')); document.getElementById(`tab-${t}`).classList.add('active'); if(t==='tasks'){ document.getElementById('view-tasks').classList.remove('hidden-view'); document.getElementById('view-insights').classList.add('hidden-view'); } else { document.getElementById('view-tasks').classList.add('hidden-view'); document.getElementById('view-insights').classList.remove('hidden-view'); renderInsights(); } }
-        function renderInsights() { const c = tasks.filter(t => t.status === 'CLOSED' && t.closedAt); let total = 0; const tbody = document.getElementById('insightTableBody'); tbody.innerHTML = ''; c.forEach(t => { const d = t.closedAt - t.created; total += d; tbody.innerHTML += `<tr class="border-b border-white/5"><td class="p-4 text-xs text-slate-400 font-mono">${new Date(t.closedAt).toLocaleDateString()}</td><td class="p-4">${t.so}</td><td class="p-4 font-mono">${Math.floor(d/36e5)}h</td><td class="p-4 text-cyan-400">S</td></tr>`; }); document.getElementById('insightTotal').innerText = c.length; if(c.length) document.getElementById('insightDuration').innerText = Math.floor((total/c.length)/36e5) + "h"; }
-
+        function openTeamsChannel() { window.open(TEAMS_CHANNEL_URL, '_blank'); }
         function updateClock() { const n = new Date(); document.getElementById('clock').innerText = n.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}); document.getElementById('date').innerText = n.toLocaleDateString([],{weekday:'short',day:'numeric',month:'short'}); }
-        async function fetchWeather() { try { const r = await fetch('https://api.open-meteo.com/v1/forecast?latitude=-31.98&longitude=116.01&current_weather=true'); const d = await r.json(); document.getElementById('weatherTemp').innerText = Math.round(d.current_weather.temperature) + "\u00B0C"; } catch(e){} }
-
+        
+        // INIT
         document.getElementById('soInput').addEventListener('keypress', e => { if(e.key==='Enter') document.getElementById('taskInput').focus(); });
         document.getElementById('taskInput').addEventListener('keypress', e => { if(e.key==='Enter') addTask(); });
-        
-        setInterval(updateClock, 1000); updateClock(); fetchWeather(); fetchFromCloud();
+        setInterval(updateClock, 1000); updateClock(); fetchFromCloud();
     </script>
 </body>
 </html>
