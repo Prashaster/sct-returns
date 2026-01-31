@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>SCT Returns v9.0</title>
+    <title>SCT Returns v9.1</title>
     <link rel="icon" type="image/png" href="sct-logistics-vector-logo.png">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
@@ -24,7 +24,6 @@
         
         /* Glass & UI */
         .glass-panel { background: rgba(15, 17, 26, 0.85); backdrop-filter: blur(12px); border: 1px solid rgba(148, 163, 184, 0.1); }
-        /* Dropdown z-index boosted to ensure it floats above inputs */
         .glass-dropdown-menu { background: rgba(2, 6, 23, 0.98); backdrop-filter: blur(16px); border: 1px solid rgba(6, 182, 212, 0.2); box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.9); z-index: 50; }
         
         /* Sidebar & Memos */
@@ -44,9 +43,9 @@
         @keyframes row-pulse { 0%, 100% { background-color: rgba(251, 191, 36, 0.05); box-shadow: inset 3px 0 0 0 rgba(251, 191, 36, 0.3); } 50% { background-color: rgba(251, 191, 36, 0.1); box-shadow: inset 3px 0 0 0 rgba(251, 191, 36, 0.8); } }
         .row-progress-active { animation: row-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
 
-        /* Sync Status */
+        /* Sync Status - FIXED: No animation on the text class itself */
         #syncStatus { font-size: 10px; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; }
-        .syncing { color: #facc15; animation: spin 2s linear infinite; } 
+        .syncing { color: #facc15; } 
         .synced { color: #22c55e; } .error { color: #ef4444; }
 
         /* Mobile Optimization */
@@ -54,7 +53,7 @@
             .mobile-stack { flex-direction: column; align-items: flex-start; gap: 1rem; }
             .mobile-hide { display: none; }
             .glass-panel { backdrop-filter: none; background: #0f172a; } 
-            #weatherWidget { display: none; } /* Hide weather on very small screens to save space */
+            #weatherWidget { display: none; }
         }
     </style>
     
@@ -230,7 +229,7 @@
         function updateSyncUI(msg, status) {
             const el = document.getElementById('syncStatus');
             const icon = status==='syncing'?'refresh-cw':status==='synced'?'check-circle':'alert-circle';
-            // Only spin the icon, not the text
+            // FIX: Spin logic applied to ICON only
             const spin = status==='syncing'?'animate-spin':'';
             el.innerHTML = `<i data-lucide="${icon}" width="10" class="${spin}"></i> ${msg}`;
             el.className = `mt-1 flex items-center gap-2 ${status}`;
