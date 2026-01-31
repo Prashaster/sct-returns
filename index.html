@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>SCT Returns v8.1</title>
+    <title>SCT Returns v9.0</title>
     <link rel="icon" type="image/png" href="sct-logistics-vector-logo.png">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
@@ -24,10 +24,11 @@
         
         /* Glass & UI */
         .glass-panel { background: rgba(15, 17, 26, 0.85); backdrop-filter: blur(12px); border: 1px solid rgba(148, 163, 184, 0.1); }
-        .glass-dropdown-menu { background: rgba(2, 6, 23, 0.95); backdrop-filter: blur(16px); border: 1px solid rgba(6, 182, 212, 0.2); box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.8); }
+        /* Dropdown z-index boosted to ensure it floats above inputs */
+        .glass-dropdown-menu { background: rgba(2, 6, 23, 0.98); backdrop-filter: blur(16px); border: 1px solid rgba(6, 182, 212, 0.2); box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.9); z-index: 50; }
         
         /* Sidebar & Memos */
-        #memoPanel { box-shadow: -10px 0 30px rgba(0,0,0,0.5); background: rgba(10, 12, 20, 0.98); }
+        #memoPanel { box-shadow: -10px 0 30px rgba(0,0,0,0.5); background: rgba(10, 12, 20, 0.98); z-index: 100; }
         .memo-card { transition: all 0.2s; }
         .memo-card:focus-within { border-color: rgba(6, 182, 212, 0.5); background: rgba(255,255,255,0.03); }
 
@@ -43,18 +44,17 @@
         @keyframes row-pulse { 0%, 100% { background-color: rgba(251, 191, 36, 0.05); box-shadow: inset 3px 0 0 0 rgba(251, 191, 36, 0.3); } 50% { background-color: rgba(251, 191, 36, 0.1); box-shadow: inset 3px 0 0 0 rgba(251, 191, 36, 0.8); } }
         .row-progress-active { animation: row-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
 
-        /* Sync Status - FIXED: Removed the spin animation from the text container */
+        /* Sync Status */
         #syncStatus { font-size: 10px; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; }
-        .syncing { color: #facc15; } /* Just color, no spin */
-        .synced { color: #22c55e; } 
-        .error { color: #ef4444; }
+        .syncing { color: #facc15; animation: spin 2s linear infinite; } 
+        .synced { color: #22c55e; } .error { color: #ef4444; }
 
         /* Mobile Optimization */
         @media (max-width: 768px) {
             .mobile-stack { flex-direction: column; align-items: flex-start; gap: 1rem; }
-            .mobile-full { width: 100%; }
             .mobile-hide { display: none; }
             .glass-panel { backdrop-filter: none; background: #0f172a; } 
+            #weatherWidget { display: none; } /* Hide weather on very small screens to save space */
         }
     </style>
     
@@ -64,7 +64,7 @@
 </head>
 <body class="text-slate-300 min-h-screen flex flex-col p-4 md:p-6" onclick="handleGlobalClick(event)">
 
-    <div id="memoPanel" class="fixed top-0 right-0 h-full w-full md:w-96 glass-panel border-l border-white/10 transform translate-x-full transition-transform duration-300 z-50 flex flex-col">
+    <div id="memoPanel" class="fixed top-0 right-0 h-full w-full md:w-96 glass-panel border-l border-white/10 transform translate-x-full transition-transform duration-300 flex flex-col">
         <div class="p-6 border-b border-white/10 flex justify-between items-center bg-[#020617]">
             <h2 class="text-white font-bold tracking-widest flex items-center gap-2"><i data-lucide="sticky-note" class="text-cyan-400" width="18"></i> MEMOS</h2>
             <button onclick="toggleMemoPanel()" class="p-2 hover:bg-white/10 rounded-full"><i data-lucide="x" width="24"></i></button>
@@ -96,8 +96,8 @@
             </button>
 
             <div class="flex bg-white/5 rounded border border-white/10">
-                <button onclick="exportJSON()" class="px-3 py-2 hover:bg-white/10 text-cyan-400 border-r border-white/10"><i data-lucide="save" width="14"></i></button>
-                <button onclick="document.getElementById('fileInput').click()" class="px-3 py-2 hover:bg-white/10 text-amber-400"><i data-lucide="upload-cloud" width="14"></i></button>
+                <button onclick="exportJSON()" class="px-3 py-2 hover:bg-white/10 text-cyan-400 border-r border-white/10" title="Backup"><i data-lucide="save" width="14"></i></button>
+                <button onclick="document.getElementById('fileInput').click()" class="px-3 py-2 hover:bg-white/10 text-amber-400" title="Restore"><i data-lucide="upload-cloud" width="14"></i></button>
             </div>
             <input type="file" id="fileInput" class="hidden" accept=".json" onchange="importJSON(this)">
             
@@ -107,7 +107,15 @@
 
             <div class="hidden md:block w-px h-8 bg-white/10 mx-2"></div>
 
-            <div class="text-right">
+            <div id="weatherWidget" class="hidden lg:flex items-center gap-3 text-right pr-4">
+                <div class="flex flex-col">
+                    <span id="weatherTemp" class="text-2xl font-mono text-cyan-400 font-bold leading-none">--</span>
+                    <span class="text-[10px] text-slate-500 uppercase tracking-widest mt-1">Forrestfield</span>
+                </div>
+                <i id="weatherIcon" data-lucide="cloud" class="text-slate-400 w-8 h-8"></i>
+            </div>
+
+            <div class="text-right border-l border-white/10 pl-4">
                 <div id="clock" class="mono text-white font-bold text-xl leading-none">00:00</div>
                 <div id="date" class="text-[10px] text-slate-500 uppercase tracking-widest">-- ---</div>
             </div>
@@ -184,7 +192,7 @@
     <script>
         // =======================================================
         // === CONFIGURATION ===
-        const API_URL = "https://script.google.com/macros/s/AKfycbyDHocaIfl20PvyMZEzKYCQwrDtR2VTFxLG9o-p3YxfGOtNkurXOozRvr-izZc4fitRXg/exec"; 
+        const API_URL = "https://script.google.com/macros/s/AKfycbyDHocaIfl20PvyMZEzKYCQwrDtR2VTFxLG9o-p3YxfGOtNkurXOozRvr-izZc4fitRXg/exec";
         // =======================================================
 
         const CONTACTS = { default: "manager@sctlogistics.com.au" };
@@ -200,7 +208,7 @@
                 const res = await fetch(API_URL);
                 const data = await res.json();
                 if(data && Array.isArray(data)) {
-                    // Only update if data is different (simple check) to prevent jitter
+                    // Only update if data is different to prevent jitter
                     if(JSON.stringify(data) !== JSON.stringify(tasks)) {
                         tasks = data.sort((a, b) => b.created - a.created);
                         render();
@@ -222,7 +230,7 @@
         function updateSyncUI(msg, status) {
             const el = document.getElementById('syncStatus');
             const icon = status==='syncing'?'refresh-cw':status==='synced'?'check-circle':'alert-circle';
-            // FIX: Apply spin class ONLY to the icon element
+            // Only spin the icon, not the text
             const spin = status==='syncing'?'animate-spin':'';
             el.innerHTML = `<i data-lucide="${icon}" width="10" class="${spin}"></i> ${msg}`;
             el.className = `mt-1 flex items-center gap-2 ${status}`;
@@ -330,13 +338,35 @@
         function exportJSON() { const d = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify({tasks, memos})); const a = document.createElement('a'); a.href = d; a.download = "sct_backup.json"; a.click(); }
         function importJSON(i) { const f = i.files[0]; if(!f) return; const r = new FileReader(); r.onload = function(e) { try { const d = JSON.parse(e.target.result); if(confirm(`Restore?`)) { if(Array.isArray(d)) tasks = d; else { tasks = d.tasks||[]; memos = d.memos||[]; } saveTasks(); saveMemos(); alert("Restored."); } } catch(err) { alert("Invalid File"); } }; r.readAsText(f); i.value = ''; }
 
+        // Weather Logic Fixed
+        async function fetchWeather() { 
+            try { 
+                const r = await fetch('https://api.open-meteo.com/v1/forecast?latitude=-31.98&longitude=116.01&current_weather=true'); 
+                const d = await r.json(); 
+                
+                // Temp
+                document.getElementById('weatherTemp').innerText = Math.round(d.current_weather.temperature) + "\u00B0C";
+                
+                // Icon Logic
+                const code = d.current_weather.weathercode;
+                let icon = 'cloud';
+                if(code === 0) icon = 'sun';
+                else if(code < 3) icon = 'cloud-sun';
+                else if(code > 50) icon = 'cloud-rain';
+                else if(code > 90) icon = 'cloud-lightning';
+                
+                document.getElementById('weatherIcon').setAttribute('data-lucide', icon);
+                lucide.createIcons();
+            } catch(e) {} 
+        }
+
         // INIT
         document.getElementById('soInput').addEventListener('keypress', e => { if(e.key==='Enter') document.getElementById('taskInput').focus(); });
         document.getElementById('taskInput').addEventListener('keypress', e => { if(e.key==='Enter') addTask(); });
         
         // Auto-refresh interval (Heartbeat) - Runs every 15 seconds
         setInterval(() => { if(!document.hidden) fetchFromCloud(); }, 15000);
-        setInterval(updateClock, 1000); updateClock(); fetchFromCloud();
+        setInterval(updateClock, 1000); updateClock(); fetchWeather(); fetchFromCloud();
     </script>
 </body>
 </html>
